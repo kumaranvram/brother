@@ -1,0 +1,51 @@
+extends ../layout
+
+block content
+  .pb-2.mt-2.mb-4
+    .row
+    h3 Blood donation request for #{request.patientName }
+    h3 &nbsp;
+    .card.left-padding-1em.top-padding-1em
+        .row
+            .col-md-3 Name:
+            .col-md-3 #{request.patientName}
+        .row
+            .col-md-12 
+            | &nbsp;
+        .row
+            .col-md-3 Blood Group:
+            .col-md-3 #{request.bloodGroup()}
+        .row
+            .col-md-12 
+            | &nbsp;
+        .row
+            .col-md-3 Contact Number:
+            .col-md-3 #{request.contactNumber}
+        .row
+            .col-md-12 
+            | &nbsp;
+        .row
+            .col-md-3 Needed for:
+            .col-md-3 #{request.cause}
+        .row
+            .col-md-12 
+            | &nbsp;
+        .row
+            .col-md-3 Required Date:
+            .col-md-3 #{request.requiredDate}
+        .row
+            .col-md-12 
+            | &nbsp;
+        .row
+            .col-md-3 Hospital Name:
+            .col-md-3 #{request.hospitalName}
+        .row
+            .col-md-12 
+            | &nbsp;
+        .row
+            .col-md-3 Hospital Location:
+            .col-md-6
+                | #{request.hospitalDetails()}    
+                a(href=`https://www.google.com/maps/search/` +request.hospitalDetails())
+                    i.fa.fa-map View in map
+            

@@ -34,7 +34,7 @@ const homeController = require('./controllers/home');
 const userController = require('./controllers/user');
 const apiController = require('./controllers/api');
 const contactController = require('./controllers/contact');
-const contactController = require('./controllers/request');
+const requestController = require('./controllers/request');
 
 /**
  * API keys and Passport configuration.
@@ -63,7 +63,7 @@ mongoose.connection.on('error', (err) => {
  * Express configuration.
  */
 app.set('host', process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0');
-app.set('port', process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080);
+app.set('port', process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 4040);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 app.use(expressStatusMonitor());
@@ -144,7 +144,10 @@ app.post('/account/profile', passportConfig.isAuthenticated, userController.post
 app.post('/account/password', passportConfig.isAuthenticated, userController.postUpdatePassword);
 app.post('/account/delete', passportConfig.isAuthenticated, userController.postDeleteAccount);
 app.get('/account/unlink/:provider', passportConfig.isAuthenticated, userController.getOauthUnlink);
-app.post('/requests', passportConfig.isAuthenticated, requestsController.createRequest);
+app.post('/requests', passportConfig.isAuthenticated, requestController.createRequest);
+app.get('/requests/view/:id', passportConfig.isAuthenticated, requestController.getRequestById);
+app.get('/requests/new', passportConfig.isAuthenticated, requestController.newRequest);
+app.get('/requests/list', passportConfig.isAuthenticated, requestController.getAllRequests);
 
 /**
  * API examples routes.

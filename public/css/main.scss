@@ -158,3 +158,41 @@ textarea {
   }
 }
 
+.card {
+  background-color: none;
+  border: none;
+  box-shadow: 1px 1px 0px #999999;
+
+  &:hover {
+    box-shadow: 0px 5px 5px #999999;
+  }
+}
+
+.vertical-align {
+  display: flex;
+  flex-direction: row;
+}
+
+.blood-red {
+  color: #bb0a1e
+}
+
+.link {
+  cursor: pointer;
+  text-decoration: none;
+  color: #212529;
+
+  &:hover {
+    cursor: pointer;    
+    text-decoration: none;
+    color: #212529;
+  }
+}
+
+.left-padding-1em {
+  padding-left: 1em;
+}
+
+.top-padding-1em {
+  padding-top: 1em;
+}

@@ -1,0 +1,66 @@
+extends ../layout
+
+block content
+  .pb-2.mt-2.mb-4.border-bottom
+    h3 Request for Blood
+  form(action='/requests', method='POST')
+    input(type='hidden', name='_csrf', value=_csrf)
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='patientName') Name
+      .col-md-7
+        input.form-control(type='text', name='patientName', id='patientName')
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='contactNumber') Phone
+      .col-md-7
+        input.form-control(type='text', name='contactNumber', id='contactNumber')
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='bloodGroup') Blood Group
+      .col-md-7
+        select.form-control(name='requiredBloodGroup', id='requiredBloodGroup', autocomplete)
+          option(value='a_pos') A+
+          option(value='a_neg') A-  
+          option(value='b_pos') B+
+          option(value='b_neg') B-  
+          option(value='ab_pos') AB+
+          option(value='ab_neg') AB-  
+          option(value='o_pos') O+
+          option(value='o_neg') O-  
+          option(value='a1b_pos') A1B+
+          option(value='a1b_neg') A1B-  
+          option(value='a2b_pos') A2B+
+          option(value='a2b_neg') A2B-  
+          option(value='hh') Hh (Bombay blood group)
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='numberOfUnits') Number of Units Required
+      .col-md-7
+        input.form-control(type='text', name='numberOfUnits', id='numberOfUnits', autocomplete)
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='cause') Cause: 
+        p (Heart Operation, Accident, Platelets etc.)
+      .col-md-7
+        input.form-control(type='text', name='cause', id='cause')
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='requiredDate') Required Date
+      .col-md-7
+        input.form-control(type='date', name='requiredDate', id='requiredDate')
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='hospitalName') Hospital Name
+      .col-md-7
+        input.form-control(type='text', name='hospitalName', id='hospitalName')
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='city') City
+      .col-md-7
+        input.form-control(type='text', name='city', id='city', autocomplete)
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='state') State
+      .col-md-7
+        input.form-control(type='text', name='state', id='state', autocomplete)
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='country') Country
+      .col-md-7
+        input.form-control(type='text', name='country', id='country', autocomplete)
+    .form-group
+      .offset-sm-3.col-md-7.pl-2
+        button.btn.btn.btn-primary(type='submit')
+          i.fas.fa-pencil-alt.fa-sm
+          | Request for Blood

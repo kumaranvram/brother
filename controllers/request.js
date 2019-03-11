@@ -1,323 +1,97 @@
 const { promisify } = require('util');
 const Request = require('../models/Request');
+var ObjectId = require('mongoose').Types.ObjectId; 
 
 /**
  * POST /account/profile
  * Update profile information.
  */
-exports.postRequest = (req, res, next) => {
-  req.assert('email', 'Please enter a valid email address.').isEmail();
-  req.sanitize('email').normalizeEmail({ gmail_remove_dots: false });
+exports.createRequest = (req, res, next) => {
+
+  req.assert('patientName', 'Patient Name cannot be blank.').notEmpty();
+  req.assert('requiredBloodGroup', 'Blood group cannot be blank.').notEmpty();
+  req.assert('numberOfUnits', 'Number of Units should be a number').isNumeric();
+  req.assert('requiredDate', 'Required Date cannot be blank').notEmpty();
+  req.assert('hospitalName', 'Hospital name cannot be blank').notEmpty();
+  req.assert('contactNumber', 'Contact Number should be a mobile number').isMobilePhone();
+  req.assert('city', 'City cannot be blank').notEmpty();
+  req.assert('state', 'State cannot be blank').notEmpty();
 
   const errors = req.validationErrors();
 
   if (errors) {
     req.flash('errors', errors);
-    return res.redirect('/account');
+    return res.redirect("/requests/new")
   }
 
-  User.findById(req.user.id, (err, user) => {
-    if (err) { return next(err); }
-    console.log(req.body);
-    user.email = req.body.email || '';
-    user.profile.name = req.body.name || '';
-    user.profile.gender = req.body.gender || '';
-    user.profile.phone = req.body.phone || '';
-    user.profile.state = req.body.state || '';
-    user.profile.city = req.body.city || '';
-    user.profile.country = req.body.country || '';
-    user.profile.bloodGroup = req.body.bloodGroup || '';
-    user.profile.dob = req.body.dob || '';
-    user.save((err) => {
-      if (err) {
-        if (err.code === 11000) {
-          req.flash('errors', { msg: 'The email address you have entered is already associated with an account.' });
-          return res.redirect('/account');
-        }
-        return next(err);
+  const bloodRequest = new Request({
+    requiredBloodGroup: req.body.requiredBloodGroup,
+    patientName: req.body.patientName,
+    contactNumber: req.body.contactNumber,
+    requiredDate: req.body.requiredDate,
+    numberOfUnits: req.body.numberOfUnits,
+    hospitalName: req.body.hospitalName,
+    city: req.body.city,
+    state: req.body.state,
+    country: req.body.country,
+  });
+
+  bloodRequest.save((err, r) => {
+    if (err) {
+      if (err.code === 11000) {
+        req.flash('errors', { msg: 'Unable to create a request for blood requirement' });
       }
-      req.flash('success', { msg: 'Profile information has been updated.' });
-      res.redirect('/account');
-    });
-  });
-};
-
-/**
- * POST /account/password
- * Update current password.
- */
-exports.postUpdatePassword = (req, res, next) => {
-  req.assert('password', 'Password must be at least 4 characters long').len(4);
-  req.assert('confirmPassword', 'Passwords do not match').equals(req.body.password);
-
-  const errors = req.validationErrors();
-
-  if (errors) {
-    req.flash('errors', errors);
-    return res.redirect('/account');
-  }
-
-  User.findById(req.user.id, (err, user) => {
-    if (err) { return next(err); }
-    user.password = req.body.password;
-    user.save((err) => {
-      if (err) { return next(err); }
-      req.flash('success', { msg: 'Password has been changed.' });
-      res.redirect('/account');
-    });
-  });
-};
-
-/**
- * POST /account/delete
- * Delete user account.
- */
-exports.postDeleteAccount = (req, res, next) => {
-  User.deleteOne({ _id: req.user.id }, (err) => {
-    if (err) { return next(err); }
-    req.logout();
-    req.flash('info', { msg: 'Your account has been deleted.' });
-    res.redirect('/');
-  });
-};
-
-/**
- * GET /account/unlink/:provider
- * Unlink OAuth provider.
- */
-exports.getOauthUnlink = (req, res, next) => {
-  const { provider } = req.params;
-  User.findById(req.user.id, (err, user) => {
-    if (err) { return next(err); }
-    const lowerCaseProvider = provider.toLowerCase();
-    const titleCaseProvider = toTitleCase(provider);
-    user[lowerCaseProvider] = undefined;
-    const tokensWithoutProviderToUnlink = user.tokens.filter(token =>
-      token.kind !== lowerCaseProvider);
-    // Some auth providers do not provide an email address in the user profile.
-    // As a result, we need to verify that unlinking the provider is safe by ensuring
-    // that another login method exists.
-    if (
-      !(user.email && user.password)
-      && tokensWithoutProviderToUnlink.length === 0
-    ) {
-      req.flash('errors', {
-        msg: `The ${titleCaseProvider} account cannot be unlinked without another form of login enabled.`
-          + ' Please link another account or add an email address and password.'
-      });
-      return res.redirect('/account');
+      res.redirect('/requests/new');
+      return next(err);
     }
-    user.tokens = tokensWithoutProviderToUnlink;
-    user.save((err) => {
-      if (err) { return next(err); }
-      req.flash('info', { msg: `${titleCaseProvider} account has been unlinked.` });
-      res.redirect('/account');
-    });
+    req.flash('success', { msg: 'Your request has been posted' });
+    res.redirect(`/requests/view/${r._id.toString()}`);
   });
 };
 
+
 /**
- * GET /reset/:token
+ * GET /requests
  * Reset Password page.
  */
-exports.getReset = (req, res, next) => {
-  if (req.isAuthenticated()) {
-    return res.redirect('/');
+
+exports.newRequest = (req, res, next)  => {
+  res.render('requests/new', {
+    title: 'Request For Blood'
+  })
+};
+
+exports.getAllRequests = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    req.flash('errors', { msg: 'You need to be logged in.' });
+    return res.redirect('/login');
   }
-  User
-    .findOne({ passwordResetToken: req.params.token })
-    .where('passwordResetExpires').gt(Date.now())
-    .exec((err, user) => {
+  Request
+    .find({})
+    .where('requiredDate').gt(Date.now())
+    .exec((err, requests) => {
       if (err) { return next(err); }
-      if (!user) {
-        req.flash('errors', { msg: 'Password reset token is invalid or has expired.' });
-        return res.redirect('/forgot');
-      }
-      res.render('account/reset', {
-        title: 'Password Reset'
+      res.render('requests/list', {
+        title: 'Requests',
+        requests: requests
       });
     });
 };
 
-/**
- * POST /reset/:token
- * Process the reset password request.
- */
-exports.postReset = (req, res, next) => {
-  req.assert('password', 'Password must be at least 4 characters long.').len(4);
-  req.assert('confirm', 'Passwords must match.').equals(req.body.password);
-
-  const errors = req.validationErrors();
-
-  if (errors) {
-    req.flash('errors', errors);
-    return res.redirect('back');
+exports.getRequestById = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    req.flash('errors', { msg: 'You need to be logged in.' });
+    return res.redirect('/login');
   }
-
-  const resetPassword = () =>
-    User
-      .findOne({ passwordResetToken: req.params.token })
-      .where('passwordResetExpires').gt(Date.now())
-      .then((user) => {
-        if (!user) {
-          req.flash('errors', { msg: 'Password reset token is invalid or has expired.' });
-          return res.redirect('back');
-        }
-        user.password = req.body.password;
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
-        return user.save().then(() => new Promise((resolve, reject) => {
-          req.logIn(user, (err) => {
-            if (err) { return reject(err); }
-            resolve(user);
-          });
-        }));
+  Request
+    .findOne({_id: new ObjectId(req.params.id)})
+    .where('requiredDate').gt(Date.now())
+    .exec((err, request) => {
+      if (err) { return next(err); }
+      res.render('requests/view', {
+        title: 'Requests',
+        request: request
       });
-
-  const sendResetPasswordEmail = (user) => {
-    if (!user) { return; }
-    let transporter = nodemailer.createTransport({
-      service: 'SendGrid',
-      auth: {
-        user: process.env.SENDGRID_USER,
-        pass: process.env.SENDGRID_PASSWORD
-      }
     });
-    const mailOptions = {
-      to: user.email,
-      from: 'hackathon@starter.com',
-      subject: 'Your Hackathon Starter password has been changed',
-      text: `Hello,\n\nThis is a confirmation that the password for your account ${user.email} has just been changed.\n`
-    };
-    return transporter.sendMail(mailOptions)
-      .then(() => {
-        req.flash('success', { msg: 'Success! Your password has been changed.' });
-      })
-      .catch((err) => {
-        if (err.message === 'self signed certificate in certificate chain') {
-          console.log('WARNING: Self signed certificate in certificate chain. Retrying with the self signed certificate. Use a valid certificate if in production.');
-          transporter = nodemailer.createTransport({
-            service: 'SendGrid',
-            auth: {
-              user: process.env.SENDGRID_USER,
-              pass: process.env.SENDGRID_PASSWORD
-            },
-            tls: {
-              rejectUnauthorized: false
-            }
-          });
-          return transporter.sendMail(mailOptions)
-            .then(() => {
-              req.flash('success', { msg: 'Success! Your password has been changed.' });
-            });
-        }
-        console.log('ERROR: Could not send password reset confirmation email after security downgrade.\n', err);
-        req.flash('warning', { msg: 'Your password has been changed, however we were unable to send you a confirmation email. We will be looking into it shortly.' });
-        return err;
-      });
-  };
 
-  resetPassword()
-    .then(sendResetPasswordEmail)
-    .then(() => { if (!res.finished) res.redirect('/'); })
-    .catch(err => next(err));
-};
-
-/**
- * GET /forgot
- * Forgot Password page.
- */
-exports.getForgot = (req, res) => {
-  if (req.isAuthenticated()) {
-    return res.redirect('/');
-  }
-  res.render('account/forgot', {
-    title: 'Forgot Password'
-  });
-};
-
-/**
- * POST /forgot
- * Create a random token, then the send user an email with a reset link.
- */
-exports.postForgot = (req, res, next) => {
-  req.assert('email', 'Please enter a valid email address.').isEmail();
-  req.sanitize('email').normalizeEmail({ gmail_remove_dots: false });
-
-  const errors = req.validationErrors();
-
-  if (errors) {
-    req.flash('errors', errors);
-    return res.redirect('/forgot');
-  }
-
-  const createRandomToken = randomBytesAsync(16)
-    .then(buf => buf.toString('hex'));
-
-  const setRandomToken = token =>
-    User
-      .findOne({ email: req.body.email })
-      .then((user) => {
-        if (!user) {
-          req.flash('errors', { msg: 'Account with that email address does not exist.' });
-        } else {
-          user.passwordResetToken = token;
-          user.passwordResetExpires = Date.now() + 3600000; // 1 hour
-          user = user.save();
-        }
-        return user;
-      });
-
-  const sendForgotPasswordEmail = (user) => {
-    if (!user) { return; }
-    const token = user.passwordResetToken;
-    let transporter = nodemailer.createTransport({
-      service: 'SendGrid',
-      auth: {
-        user: process.env.SENDGRID_USER,
-        pass: process.env.SENDGRID_PASSWORD
-      }
-    });
-    const mailOptions = {
-      to: user.email,
-      from: 'hackathon@starter.com',
-      subject: 'Reset your password on Hackathon Starter',
-      text: `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\n
-        Please click on the following link, or paste this into your browser to complete the process:\n\n
-        http://${req.headers.host}/reset/${token}\n\n
-        If you did not request this, please ignore this email and your password will remain unchanged.\n`
-    };
-    return transporter.sendMail(mailOptions)
-      .then(() => {
-        req.flash('info', { msg: `An e-mail has been sent to ${user.email} with further instructions.` });
-      })
-      .catch((err) => {
-        if (err.message === 'self signed certificate in certificate chain') {
-          console.log('WARNING: Self signed certificate in certificate chain. Retrying with the self signed certificate. Use a valid certificate if in production.');
-          transporter = nodemailer.createTransport({
-            service: 'SendGrid',
-            auth: {
-              user: process.env.SENDGRID_USER,
-              pass: process.env.SENDGRID_PASSWORD
-            },
-            tls: {
-              rejectUnauthorized: false
-            }
-          });
-          return transporter.sendMail(mailOptions)
-            .then(() => {
-              req.flash('info', { msg: `An e-mail has been sent to ${user.email} with further instructions.` });
-            });
-        }
-        console.log('ERROR: Could not send forgot password email after security downgrade.\n', err);
-        req.flash('errors', { msg: 'Error sending the password reset message. Please try again shortly.' });
-        return err;
-      });
-  };
-
-  createRandomToken
-    .then(setRandomToken)
-    .then(sendForgotPasswordEmail)
-    .then(() => res.redirect('/forgot'))
-    .catch(next);
-};
+}

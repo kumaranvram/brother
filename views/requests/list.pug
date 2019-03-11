@@ -1,0 +1,22 @@
+extends ../layout
+
+block content
+  .pb-2.mt-2.mb-4
+    .row
+    h3 Your donations can save one of these lives
+    h3 &nbsp;
+    p 
+    for request in requests
+        a.row.card.link.vertical-align(href=`${request.viewUrl()}`)
+            .col-md-7.col-xs-6
+                h5 #{request.patientName}
+                h6
+                i.fas.fa-mobile 
+                | #{request.contactNumber}
+            .col-md-5.col-xs-6
+                h5
+                i.fas.fa-tint.blood-red
+                | #{request.bloodGroup()} (#{request.numberOfUnits} units)
+                h6
+                i.fas.fa-h-square
+                | #{request.hospitalDetails()}
